@@ -41,37 +41,37 @@ def points_above_safety(row,table):
     """How many points to safety"""
     return row['points'] - safety_points(table)
 # ---------- Building block 3: the status of one team ----------
-def get_status(row, table):
-    """Return a short label for one team, e.g. 'Champion'."""
-    # --- Prepare the numbers you'll compare (compute once, reuse) ---
-    my_points = row['points']               
-    my_max = max_points(row)                
-    rival_maxes = []                      
-    for r in table:
-        if r['team']['name'] != row['team']['name']:                         
-            rival_maxes.append(max_points(r))
-    rival_best_max = max(rival_maxes) 
-    leader = leader_points(table)
-    safety = safety_points(table)
+def best_rival_max(row, table):
+    """Highest max_points among all the OTHER teams."""
+    return max(max_points(r) for r in table
+               if r['team']['name'] != row['team']['name'])
 
 
-    if my_points > rival_best_max:
-        return f'CHAMPION'
-    if my_max < safety:
-            return f'Relegated'
-    relegation_zone = [max_points(row) for row in table if row['position'] in (18,19,20)]
-    if my_points > max(relegation_zone):
+def title_status(row, table):
+    """Where does this team stand in the title race?"""
+    if row['points'] > best_rival_max(row, table):
+        return 'Champion'
+    if max_points(row) < leader_points(table):
+        return 'Out of title race'
+    return 'Title race'
+
+
+def survival_status(row, table):
+    """Where does this team stand in the fight against relegation?"""
+    if max_points(row) < safety_points(table):
+        return 'Relegated'
+    bottom_three_max = max(max_points(r) for r in table
+                           if r['position'] > RELEGATION_LINE)
+    if row['points'] > bottom_three_max:
         return 'Safe'
-    if my_max < leader:
-        return f'out of the title race'
-    else: return "In progress"
-
+    return 'Not yet safe'
 
 
 def add_statuses(table):
-    """Return a list of statuses, one per team, in table order."""
+    """Add a 'title' and a 'survival' label to each row."""
     for row in table:
-        row['status'] = get_status(row,table)
+        row['title'] = title_status(row, table)
+        row['survival'] = survival_status(row, table)
     return table
 
 
@@ -80,7 +80,13 @@ if __name__ == "__main__":
     from api import get_standings
 
     table = get_standings()
-    for row in table:
-       print(row["team"]["name"], games_left(row), max_points(row),'Status: ',get_status(row,table))
-    print(f'The leader has {leader_points(table)} points now.') 
-    print(f'The safety point is {safety_points(table)} points now.')
+    #for row in table:
+       #print(row["team"]["name"], games_left(row), max_points(row),'Status: ',get_status(row,table))
+    #print(f'The leader has {leader_points(table)} points now.') 
+    #print(f'The safety point is {safety_points(table)} points now.')
+    import copy
+    fake = copy.deepcopy(table)
+    for r in fake:
+        r["playedGames"] = 37
+    for r in add_statuses(fake):
+        print(r["position"], r["team"]["name"], r["title"], r["survival"])

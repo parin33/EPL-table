@@ -35,7 +35,7 @@ def zone_color(pos):
 
 # ---------- Build the HTML table ----------
 headers = ["Pos", "Team", "P", "W", "D", "L", "GF", "GA", "GD", "Pts",
-           "Behind", "Vs safety", "Status"]
+           "Behind", "Vs safety", "Title", "Survival"]
 
 head_html = "".join(f"<th>{h}</th>" for h in headers)
 
@@ -47,7 +47,7 @@ for r in table:
     r["goalDifference"], r["points"],
     points_behind_leader(r, table),
     points_above_safety(r, table),
-    r["status"],
+    r["title"], r["survival"],
 ]
     cells_html = "".join(f"<td>{c}</td>" for c in cells)
     rows_html += f'<tr style="background-color:{zone_color(r["position"])}">{cells_html}</tr>'
